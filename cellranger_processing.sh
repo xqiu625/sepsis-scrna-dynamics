@@ -26,12 +26,3 @@ cellranger count --id="run_count_${SAMPLE_ID}" \
 EOF
 
 chmod +x run_cellranger.sh
-
-echo "Created Cell Ranger processing script: run_cellranger.sh"
-echo "Before running, please set FASTQ_DIR, SAMPLE_ID, and TRANSCRIPTOME variables"
-echo ""
-echo "Example usage:"
-echo "export FASTQ_DIR=/path/to/fastqs"
-echo "export SAMPLE_ID=sample1"
-echo "export TRANSCRIPTOME=/path/to/reference"
-echo "sbatch run_cellranger.sh"
