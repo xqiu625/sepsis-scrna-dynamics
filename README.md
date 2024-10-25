@@ -1,7 +1,5 @@
 # sepsis-scrna-dynamics
 
-# sepsis-scrna-dynamics
-
 [![DOI](https://zenodo.org/badge/DOI/10.1002/JLB.5MA0721-825R.svg)](https://doi.org/10.1002/JLB.5MA0721-825R)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
