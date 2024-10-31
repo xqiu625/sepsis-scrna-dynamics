@@ -1,0 +1,49 @@
+name: sepsis-scrna
+
+channels:
+  - conda-forge
+  - bioconda
+  - r
+  - defaults
+
+dependencies:
+  # Core R 
+  - r-base=4.0.0
+  
+  # Core analysis packages
+  - r-seurat=3.1.5
+  - r-seuratobject=3.1.5
+  
+  # Data manipulation
+  - r-dplyr=1.0.0
+  - r-tidyr=1.1.0
+  - r-stringr=1.4.0
+  - r-rstatix=0.6.0
+  
+  # Visualization packages
+  - r-ggplot2=3.3.0
+  - r-ggpubr=0.3.0
+  - r-cowplot=1.0.0
+  - r-pheatmap=1.0.12
+  - r-rcolorbrewer=1.1_2
+  - r-patchwork=1.0.0
+  
+  # Bioconductor packages 
+  - bioconductor-singlecellexperiment=1.10.1
+  - bioconductor-mast=1.14.0
+  - bioconductor-complexheatmap=2.4.2
+  - bioconductor-clusterprofiler=3.16.0
+  
+  # Additional utilities
+  - r-matrix=1.2.18
+  - r-future=1.17.0
+  - r-future.apply=1.6.0
+
+variables:
+  R_MAX_NUM_DLLS: 999
+
+# Installation instructions:
+# 1. Install Miniconda from https://docs.conda.io/en/latest/miniconda.html
+# 2. Create environment: conda env create -f environment.yml
+# 3. Activate environment: conda activate sepsis-scrna
+
