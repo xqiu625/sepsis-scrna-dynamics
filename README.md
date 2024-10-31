@@ -40,7 +40,7 @@ BiocManager::install(c("SingleR", "MAST", "clusterProfiler"))
 git clone https://github.com/yourusername/sepsis-scrna-dynamics.git
 cd sepsis-scrna-dynamics
 
-# Set up Python environment
+# Set up R environment
 conda env create -f environment.yml
 conda activate sepsis-scrna
 
