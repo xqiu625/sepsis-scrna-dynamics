@@ -25,7 +25,6 @@ The raw data have been deposited in the Gene Expression Omnibus (GEO) under acce
 
 ### Software Requirements
 - R >= 4.0.0
-- Python >= 3.8
 - Cell Ranger >= 3.1.0
 
 ### R Packages
@@ -89,9 +88,6 @@ The analysis reveals:
 - CD52 as a potential prognostic biomarker
 - Hypoxic stress as a driving factor in immune dysfunction
 
-## Contributing
-
-We welcome contributions! Please see our [contributing guidelines](CONTRIBUTING.md) for details.
 
 ## Citation
 
