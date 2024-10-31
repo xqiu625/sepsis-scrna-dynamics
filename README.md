@@ -34,11 +34,6 @@ install.packages(c("Seurat", "dplyr", "ggplot2", "patchwork"))
 BiocManager::install(c("SingleR", "MAST", "clusterProfiler"))
 ```
 
-### Python Packages
-```bash
-pip install -r requirements.txt
-```
-
 ## Installation
 
 ```bash
