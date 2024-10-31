@@ -82,14 +82,6 @@ Rscript src/visualization/heatmaps.R
 
 ## Project Structure
 
-```
-sepsis-scrna-dynamics/
-├── data/           # Raw and processed data
-├── src/            # Source code
-├── notebooks/      # Jupyter notebooks
-├── results/        # Output files and figures
-└── docs/           # Documentation
-```
 
 For detailed directory structure, see [docs/pipeline.md](docs/pipeline.md).
 
