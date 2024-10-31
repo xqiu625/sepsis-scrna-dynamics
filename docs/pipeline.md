@@ -88,20 +88,6 @@ combined <- FindClusters(combined, resolution = 1.0)
 saveRDS(combined, "sepsis_singlecell_transcriptome.rds")
 ```
 
-## File Structure
-```
-sepsis-scrna-dynamics/
-├── data/
-│   ├── raw/           # Raw FASTQ files
-│   ├── cellranger/    # Cell Ranger output
-│   └── processed/     # Processed Seurat object
-├── src/
-│   ├── preprocessing/
-│   │   ├── run_cellranger.sh
-│   │   └── create_seurat_object.R
-│   └── analysis/
-└── results/
-```
 
 ## Dependencies
 - Cell Ranger v3.1.0
