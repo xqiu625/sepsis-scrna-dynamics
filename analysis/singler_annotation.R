@@ -1,83 +1,133 @@
 # singler_annotation.R
-# Automatic cell type annotation using SingleR
+# Automated cell type annotation using SingleR with Human Primary Cell Atlas reference
 # Data from Qiu et al., 2021
 
-library(SingleR)
+library(SingleCellExperiment)
 library(Seurat)
-library(tidyverse)
 library(celldex)
+library(SingleR)
+library(dplyr)
 
-# Load reference dataset
-ref_data <- HumanPrimaryCellAtlasData()
-
-# Function to perform SingleR annotation
+#' Run SingleR annotation pipeline
+#' @param seurat_obj Seurat object
+#' @param output_dir Directory for output files
+#' @return List containing annotated metadata and cluster annotations
 run_singler_annotation <- function(seurat_obj, output_dir) {
   # Create output directory
   dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
   
-  # Extract expression matrix from Seurat object
-  expr_matrix <- GetAssayData(seurat_obj, slot = "data")
+  # Load reference dataset
+  ref.data <- HumanPrimaryCellAtlasData(ensembl = FALSE)
+  
+  # Convert Seurat to SingleCellExperiment
+  sce <- as.SingleCellExperiment(seurat_obj)
   
   # Run SingleR
-  pred <- SingleR(
-    test = expr_matrix,
-    ref = ref_data,
-    labels = ref_data$label.main,
-    method = "cluster",
-    clusters = seurat_obj$seurat_clusters
+  pred.hpca <- SingleR(
+    test = sce,
+    ref = ref.data,
+    assay.type.test = 1,
+    labels = ref.data$label.main
   )
   
-  # Add SingleR labels to Seurat object
-  seurat_obj$singler_labels <- pred$labels[match(seurat_obj$seurat_clusters,
-                                                rownames(pred))]
+  # Process results
+  seurat <- as.Seurat(sce)
+  SingleR_metadata <- seurat@meta.data
   
-  # Generate label comparison plot
-  pdf(file.path(output_dir, "singler_umap.pdf"))
-  print(DimPlot(seurat_obj, 
-                reduction = "umap", 
-                group.by = "singler_labels", 
-                label = TRUE))
-  dev.off()
+  # Create annotation dataframe
+  df <- as.data.frame(pred.hpca) %>%
+    dplyr::select(pruned.labels)
   
-  # Save annotation results
-  write.csv(
-    data.frame(
-      cluster = rownames(pred),
-      singler_label = pred$labels,
-      scores = pred$scores
-    ),
-    file = file.path(output_dir, "singler_annotations.csv"),
-    row.names = FALSE
+  # Merge annotations with metadata
+  SingleR_metadata <- merge(SingleR_metadata, df, by = 0)
+  
+  # Save complete metadata
+  write.table(
+    SingleR_metadata,
+    file = file.path(output_dir, "SingleR_metadata.txt"),
+    row.names = FALSE,
+    quote = FALSE,
+    sep = '\t'
   )
   
-  return(seurat_obj)
+  # Process cluster-level annotations
+  cluster_annotations <- process_cluster_annotations(SingleR_metadata)
+  
+  # Save cluster annotations
+  write.table(
+    cluster_annotations,
+    file = file.path(output_dir, "singleR_cellType.txt"),
+    row.names = FALSE,
+    quote = FALSE,
+    sep = '\t'
+  )
+  
+  return(list(
+    metadata = SingleR_metadata,
+    cluster_annotations = cluster_annotations
+  ))
+}
+
+#' Process cluster-level annotations
+#' @param metadata SingleR metadata
+#' @return Dataframe of cluster annotations
+process_cluster_annotations <- function(metadata) {
+  # Select relevant columns
+  cluster_type <- metadata %>% 
+    dplyr::select(seurat_clusters, SingleR.labels)
+  
+  # Get number of clusters
+  n_clusters <- n_distinct(cluster_type$seurat_clusters)
+  
+  # Initialize list to store results
+  cluster_results <- list()
+  
+  # Process each cluster
+  for (i in 0:(n_clusters-1)) {
+    # Get cell type frequencies for cluster
+    cluster_counts <- cluster_type %>%
+      dplyr::filter(seurat_clusters == i) %>%
+      pull(SingleR.labels) %>%
+      table() %>%
+      as.data.frame()
+    
+    # Sort by frequency and get top 2 cell types
+    top_types <- cluster_counts %>%
+      arrange(desc(Freq)) %>%
+      head(2) %>%
+      mutate(cluster = i)
+    
+    # Store results
+    cluster_results[[i+1]] <- top_types
+  }
+  
+  # Combine results
+  cluster_annotations <- bind_rows(cluster_results) %>%
+    rename(
+      cellType = Var1,
+      cellCount = Freq,
+      cluster = cluster
+    )
+  
+  return(cluster_annotations)
 }
 
 # Main execution
 main <- function() {
   # Set paths
-  input_path <- "results/integrated/labeled_clustered_integrated_sepsis.rds"
+  input_path <- "results/integrated/sepsis_integrated.rds"
   output_dir <- "results/singler"
   
-  # Load integrated Seurat object
+  # Load data
   seurat_obj <- readRDS(input_path)
   
   # Run SingleR annotation
-  seurat_obj <- run_singler_annotation(seurat_obj, output_dir)
+  results <- run_singler_annotation(seurat_obj, output_dir)
   
-  # Save annotated object
-  saveRDS(seurat_obj, 
-          file = file.path(output_dir, "singler_annotated_sepsis.rds"))
-  
-  # Compare manual and SingleR annotations
-  comparison_df <- data.frame(
-    manual = seurat_obj$CellType,
-    singler = seurat_obj$singler_labels
-  )
-  
-  write.csv(table(comparison_df), 
-            file = file.path(output_dir, "annotation_comparison.csv"))
+  # Print summary
+  print("SingleR annotation complete. Results saved in:")
+  print(output_dir)
 }
 
-# Run pipeline
-main()
+# Example usage:
+# main()
