@@ -70,8 +70,7 @@ Rscript src/analysis/differential_expression.R
 ### 3. Generate Figures
 ```R
 # Create visualization plots
-Rscript src/visualization/umap_plots.R
-Rscript src/visualization/heatmaps.R
+Rscript src/visualization/Figures_from_manuscript.R
 ```
 
 ## Project Structure
