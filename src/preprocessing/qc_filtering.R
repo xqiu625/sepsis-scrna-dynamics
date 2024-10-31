@@ -3,157 +3,157 @@
 # Parameters from Qiu et al., 2021
 
 library(Seurat)
-library(dplyr)
-library(ggplot2)
-library(patchwork)
+library(tidyverse)
 
-#' Read and process 10X data
-#' @param data_dir Directory containing Cell Ranger output
-#' @param sample_name Name of the sample
-#' @return Seurat object with QC metrics
-create_seurat_object <- function(data_dir, sample_name) {
-  # Read data
-  data <- Read10X(data.dir = data_dir)
-  
-  # Create Seurat object
-  seurat_obj <- CreateSeuratObject(
-    counts = data,
-    project = sample_name,
-    min.cells = 3,
-    min.features = 200
+#' Create Seurat objects from raw data
+#' @param data_dir Base directory containing filtered matrix folders
+#' @return List of Seurat objects
+create_seurat_objects <- function(data_dir) {
+  # Sample names
+  samples <- c(
+    "HC1", "HC2",
+    "NS1_T0", "NS1_T6",
+    "NS2_T0", "NS2_T6",
+    "S1_T0", "S1_T6",
+    "S2_T0", "S2_T6",
+    "S3_T0", "S3_T6"
   )
   
-  # Calculate mitochondrial percentage
-  seurat_obj[["percent.mt"]] <- PercentageFeatureSet(seurat_obj, pattern = "^MT-")
+  # Create Seurat objects
+  seurat_objects <- list()
+  for (sample in samples) {
+    data_path <- file.path(data_dir, paste0(sample, "_filtered_feature_bc_matrix"))
+    seurat_data <- Read10X(data.dir = data_path)
+    seurat_obj <- CreateSeuratObject(
+      counts = seurat_data,
+      min.features = 100,
+      project = sample
+    )
+    seurat_objects[[sample]] <- seurat_obj
+  }
   
-  return(seurat_obj)
+  return(seurat_objects)
+}
+
+#' Merge Seurat objects and add metadata
+#' @param seurat_objects List of Seurat objects
+#' @return Merged Seurat object with metadata
+merge_and_add_metadata <- function(seurat_objects) {
+  # Merge objects
+  merged_seurat <- merge(
+    x = seurat_objects[[1]],
+    y = seurat_objects[2:length(seurat_objects)],
+    add.cell.ids = names(seurat_objects)
+  )
+  
+  # Add metadata
+  merged_seurat$log10GenesPerUMI <- log10(merged_seurat$nFeature_RNA) / 
+    log10(merged_seurat$nCount_RNA)
+  
+  # Calculate mitochondrial ratio
+  merged_seurat$mitoRatio <- PercentageFeatureSet(
+    object = merged_seurat,
+    pattern = "^MT-"
+  ) / 100
+  
+  # Add sample information
+  merged_seurat$sample <- NA
+  for (sample in names(seurat_objects)) {
+    merged_seurat$sample[which(str_detect(
+      colnames(merged_seurat),
+      paste0("^", sample)
+    ))] <- sample
+  }
+  
+  return(merged_seurat)
+}
+
+#' Generate QC plots
+#' @param seurat_obj Seurat object
+#' @param output_dir Directory for output plots
+plot_qc_metrics <- function(seurat_obj, output_dir) {
+  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+  metadata <- seurat_obj@meta.data
+  
+  # Cell counts per sample
+  p1 <- metadata %>% 
+    ggplot(aes(x = sample, fill = sample)) + 
+    geom_bar() +
+    theme_classic() +
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+    ggtitle("Number of Cells per Sample")
+  ggsave(file.path(output_dir, "cell_counts.png"), p1, width = 8, height = 6)
+  
+  # UMI counts
+  p2 <- metadata %>% 
+    ggplot(aes(x = nCount_RNA, color = sample, fill = sample)) + 
+    geom_density(alpha = 0.2) + 
+    scale_x_log10() + 
+    theme_classic() +
+    ggtitle("UMI Counts Distribution")
+  ggsave(file.path(output_dir, "umi_distribution.png"), p2, width = 8, height = 6)
+  
+  # Gene counts
+  p3 <- metadata %>% 
+    ggplot(aes(x = nFeature_RNA, color = sample, fill = sample)) + 
+    geom_density(alpha = 0.2) + 
+    scale_x_log10() + 
+    theme_classic() +
+    ggtitle("Genes per Cell Distribution")
+  ggsave(file.path(output_dir, "genes_per_cell.png"), p3, width = 8, height = 6)
+  
+  # Mitochondrial ratio
+  p4 <- metadata %>% 
+    ggplot(aes(x = mitoRatio, color = sample, fill = sample)) + 
+    geom_density(alpha = 0.2) + 
+    theme_classic() +
+    ggtitle("Mitochondrial Content")
+  ggsave(file.path(output_dir, "mito_content.png"), p4, width = 8, height = 6)
 }
 
 #' Filter cells based on QC metrics
 #' @param seurat_obj Seurat object
 #' @return Filtered Seurat object
 filter_cells <- function(seurat_obj) {
-  # Apply QC thresholds as specified in the paper
-  seurat_filtered <- subset(seurat_obj,
+  filtered_obj <- subset(
+    x = seurat_obj,
     subset = nFeature_RNA >= 200 &
       nFeature_RNA <= 6000 &
-      nCount_RNA > 1000 &
-      percent.mt < 0.2
+      mitoRatio < 0.20 &
+      nCount_RNA > 1000
   )
   
-  return(seurat_filtered)
+  return(filtered_obj)
 }
 
-# Define sample information
-sample_info <- list(
-  input_dirs = c(
-    "cellranger/HC1",
-    "cellranger/HC2",
-    "cellranger/NS_LS_T0",
-    "cellranger/NS_LS_T6",
-    "cellranger/NS_ES_T0",
-    "cellranger/NS_ES_T6",
-    "cellranger/S1_T0",
-    "cellranger/S1_T6",
-    "cellranger/S2_T0",
-    "cellranger/S2_T6",
-    "cellranger/S3_T0",
-    "cellranger/S3_T6"
-  ),
-  sample_names = c(
-    "HC1",
-    "HC2",
-    "NS_LS_T0",
-    "NS_LS_T6",
-    "NS_ES_T0",
-    "NS_ES_T6",
-    "S1_T0",
-    "S1_T6",
-    "S2_T0",
-    "S2_T6",
-    "S3_T0",
-    "S3_T6"
-  )
-)
-
-
-process_samples <- function(input_dirs, sample_names, output_dir) {
-  # Create output directory
-  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+#' Main execution function
+#' @param data_dir Input directory containing filtered matrices
+#' @param output_dir Output directory for results
+main <- function(data_dir, output_dir) {
+  # Create Seurat objects
+  seurat_objects <- create_seurat_objects(data_dir)
   
-  # Initialize list for storing QC results
-  qc_results <- list()
-  filtered_objects <- list()
+  # Merge and add metadata
+  merged_seurat <- merge_and_add_metadata(seurat_objects)
   
-  # Process each sample
-  for (i in seq_along(sample_names)) {
-    message(paste0("Processing sample: ", sample_names[i]))
-    
-    # Create and filter Seurat object
-    seurat_obj <- create_seurat_object(input_dirs[i], sample_names[i])
-    filtered_obj <- filter_cells(seurat_obj)
-    
-    # Store QC metrics
-    qc_results[[i]] <- data.frame(
-      Sample = sample_names[i],
-      Total_Cells = ncol(seurat_obj),
-      Cells_After_QC = ncol(filtered_obj),
-      Median_Genes = median(filtered_obj$nFeature_RNA),
-      Median_UMI = median(filtered_obj$nCount_RNA),
-      Median_Mt_Percent = median(filtered_obj$percent.mt)
-    )
-    
-    # Store filtered object
-    filtered_objects[[sample_names[i]]] <- filtered_obj
-  }
+  # Generate QC plots before filtering
+  plot_qc_metrics(merged_seurat, file.path(output_dir, "pre_qc"))
   
-  # Combine QC results
-  qc_summary <- do.call(rbind, qc_results)
-  write.csv(qc_summary, file = file.path(output_dir, "qc_summary.csv"), row.names = FALSE)
+  # Filter cells
+  filtered_seurat <- filter_cells(merged_seurat)
   
-  # Return filtered objects
-  return(filtered_objects)
+  # Generate QC plots after filtering
+  plot_qc_metrics(filtered_seurat, file.path(output_dir, "post_qc"))
+  
+  # Save filtered data
+  saveRDS(filtered_seurat, file.path(output_dir, "filtered_seurat.rds"))
+  
+  # Print summary
+  print(table(filtered_seurat$sample))
 }
 
-# Run QC pipeline
-filtered_objects <- process_samples(
-  input_dirs = sample_info$input_dirs,
-  sample_names = sample_info$sample_names,
-  output_dir = "results/qc"
-)
-
-# Add metadata for condition and time point
-add_metadata <- function(seurat_obj, sample_name) {
-  seurat_obj$condition <- case_when(
-    grepl("^HC", sample_name) ~ "HC",
-    grepl("^NS_LS", sample_name) ~ "NS_LS",
-    grepl("^NS_ES", sample_name) ~ "NS_ES",
-    grepl("^S", sample_name) ~ "S"
-  )
-  
-  seurat_obj$Time <- case_when(
-    grepl("^HC", sample_name) ~ "NA",
-    grepl("T0$", sample_name) ~ "T0",
-    grepl("T6$", sample_name) ~ "T6"
-  )
-  
-  return(seurat_obj)
-}
-
-# Add metadata to all objects
-filtered_objects <- lapply(names(filtered_objects), function(sample_name) {
-  add_metadata(filtered_objects[[sample_name]], sample_name)
-})
-
-# Merge all objects
-merged_seurat <- merge(
-  filtered_objects[[1]], 
-  y = filtered_objects[2:length(filtered_objects)],
-  add.cell.ids = sample_info$sample_names
-)
-
-# Save merged object
-saveRDS(merged_seurat, "results/qc/sepsis_merged_filtered.rds")
-
-# Print summary
-print(table(merged_seurat$condition, merged_seurat$Time))
+# Example usage:
+# main(
+#   data_dir = "data/filtered_matrices",
+#   output_dir = "results/preprocessing"
+# )
