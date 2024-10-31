@@ -1,4 +1,4 @@
-# marker_analysis_pipeline.R
+# marker_analysis_scCATCH.R
 # Marker gene identification and cell type annotation
 # Data from Qiu et al., 2021
 
