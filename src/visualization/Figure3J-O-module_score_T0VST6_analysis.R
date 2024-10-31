@@ -22,9 +22,10 @@ GENE_MODULES <- list(
 )
 
 # Define cell type groups
-CELL_TYPES <- list(
-c('CD14+ Mono', 'FCGR3A+ Mono', 'Platelet', 'B', 'CD4+ T', 
-          'CD8+ T', 'NK', 'Erythroid precursor', 'DC', 'Neutrophil'))
+CELL_TYPES <- c(
+  'CD14+ Mono', 'FCGR3A+ Mono', 'Platelet', 'B', 
+  'CD4+ T', 'CD8+ T', 'NK', 'Erythroid precursor', 'DC'
+)
 
 
 #' Calculate module scores
