@@ -110,11 +110,6 @@ If you use this code in your research, please cite:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Contact
-
-- **Meera Nair** - meera.nair@medsch.ucr.edu
-- **Adam Godzik** - adam.godzik@medsch.ucr.edu
-
 ## Acknowledgments
 
 This research was supported by:
