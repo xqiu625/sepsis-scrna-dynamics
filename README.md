@@ -3,7 +3,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.1002/JLB.5MA0721-825R.svg)](https://doi.org/10.1002/JLB.5MA0721-825R)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-This repository contains the analysis code for the paper "Dynamic changes in human single-cell transcriptional signatures during fatal sepsis" (Qiu et al., 2021, Journal of Leukocyte Biology).
+This repository contains the analysis code for the paper "Dynamic changes in human single-cell transcriptional signatures during fatal sepsis" (Qiu et al., 2024, International Journal of Molecular Sciences).
 
 ## Overview
 
