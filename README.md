@@ -6,6 +6,9 @@
 This repository contains the analysis code for the paper "Dynamic changes in human single-cell transcriptional signatures during fatal sepsis" (Qiu et al., 2024, International Journal of Molecular Sciences).
 
 ## Overview
+![sepsis-scrna-dynamics-overview](sepsis-scrna-dynamics-overview.jpeg)
+
+
 
 This project analyzes single-cell RNA sequencing data from peripheral blood mononuclear cells (PBMCs) of sepsis patients to understand the molecular dynamics during the critical early hours of sepsis progression. The analysis includes:
 
