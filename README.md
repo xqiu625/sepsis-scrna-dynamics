@@ -26,13 +26,13 @@ This project analyzes single-cell RNA sequencing data from peripheral blood mono
 
 Each cell $i$ is a count vector $\mathbf{x}_i \in \mathbb{N}_0^{G}$. A cell is retained iff it satisfies the constraint set
 
-$$n_{\min} \;\le\; \big|\{ g : x_{ig} > 0 \}\big| \;\le\; n_{\max}, \qquad \mathrm{pct}_{\mathrm{mt}}(i) = \frac{\sum_{g \in \mathcal{MT}} x_{ig}}{\sum_{g=1}^{G} x_{ig}} \times 100 \;\le\; \tau_{\mathrm{mt}},$$
+$$n_{\min} \ \le\  \big|\{ g : x_{ig} > 0 \}\big| \ \le\  n_{\max}, \qquad \mathrm{pct}_{\mathrm{mt}}(i) = \frac{\sum_{g \in \mathcal{MT}} x_{ig}}{\sum_{g=1}^{G} x_{ig}} \times 100 \ \le\  \tau_{\mathrm{mt}},$$
 
 removing both empty droplets (low gene count) and stressed/lysing cells (high mitochondrial fraction $\mathcal{MT}$).
 
 ### 2. Library-Size Normalization
 
-$$\tilde{x}_{ig} = \log\!\left(1 + 10^{4} \cdot \frac{x_{ig}}{\sum_{g'=1}^{G} x_{ig'}}\right),$$
+$$\tilde{x}_{ig} = \log\left(1 + 10^{4} \cdot \frac{x_{ig}}{\sum_{g'=1}^{G} x_{ig'}}\right),$$
 
 which renders cells comparable under the Poisson/multinomial sampling model of UMI counts and stabilizes the mean–variance relationship.
 
@@ -40,7 +40,7 @@ which renders cells comparable under the Poisson/multinomial sampling model of U
 
 Survivor vs. non-survivor differential expression is tested gene-by-gene with a two-part **hurdle model**. With $z_{ig} = \mathbb{1}[\tilde{x}_{ig} > 0]$ the detection indicator,
 
-$$\operatorname{logit} P(z_{ig} = 1) = \mathbf{c}_i^{\top}\boldsymbol{\beta}_g^{\mathrm{disc}}, \qquad \tilde{x}_{ig} \mid (z_{ig} = 1) \sim \mathcal{N}\!\left(\mathbf{c}_i^{\top}\boldsymbol{\beta}_g^{\mathrm{cont}},\ \sigma_g^2\right),$$
+$$\mathrm{logit} P(z_{ig} = 1) = \mathbf{c}_i^{\top}\boldsymbol{\beta}_g^{\mathrm{disc}}, \qquad \tilde{x}_{ig} \mid (z_{ig} = 1) \sim \mathcal{N}\left(\mathbf{c}_i^{\top}\boldsymbol{\beta}_g^{\mathrm{cont}},\ \sigma_g^2\right),$$
 
 where $\mathbf{c}_i$ encodes outcome group and cellular detection rate (a proxy for technical depth). The discrete component captures changes in *detection frequency*, the continuous component changes in *expression magnitude*; a combined $\chi^2$ test on $(\boldsymbol{\beta}^{\mathrm{disc}}, \boldsymbol{\beta}^{\mathrm{cont}})$ followed by Benjamini–Hochberg correction yields FDR-controlled calls at $q = 0.05$.
 
@@ -56,7 +56,7 @@ which revealed the early expansion of platelet and erythroid precursors in non-s
 
 Cells are ordered along a learned principal graph on the low-dimensional embedding; pseudotime is the geodesic distance from the root state,
 
-$$\tau(i) = d_{\mathcal{G}}\!\left(\operatorname{proj}_{\mathcal{G}}(\mathbf{u}_i),\ \text{root}\right),$$
+$$\tau(i) = d_{\mathcal{G}}\left(\mathrm{proj}_{\mathcal{G}}(\mathbf{u}_i),\ \text{root}\right),$$
 
 recovering the monocyte and lymphocyte transcriptional trajectories that diverge between outcome groups.
 
