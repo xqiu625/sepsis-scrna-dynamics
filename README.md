@@ -3,12 +3,10 @@
 [![DOI](https://zenodo.org/badge/DOI/10.1002/JLB.5MA0721-825R.svg)](https://doi.org/10.1002/JLB.5MA0721-825R)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-This repository contains the analysis code for the paper "Dynamic changes in human single-cell transcriptional signatures during fatal sepsis" (Qiu et al., 2024, International Journal of Molecular Sciences).
+This repository contains the analysis code for the paper **"Dynamic changes in human single-cell transcriptional signatures during fatal sepsis"** (Qiu et al., 2021, *Journal of Leukocyte Biology*).
 
 ## Overview
 ![sepsis-scrna-dynamics-overview](sepsis-scrna-dynamics-overview.jpeg)
-
-
 
 This project analyzes single-cell RNA sequencing data from peripheral blood mononuclear cells (PBMCs) of sepsis patients to understand the molecular dynamics during the critical early hours of sepsis progression. The analysis includes:
 
@@ -19,6 +17,58 @@ This project analyzes single-cell RNA sequencing data from peripheral blood mono
 - Investigation of platelet and erythroid precursor responses
 - Analysis of monocyte transcriptional changes
 - CD52 expression analysis in lymphocytes
+
+---
+
+## Mathematical Methods
+
+### 1. Quality Control as Constrained Filtering
+
+Each cell $i$ is a count vector $\mathbf{x}_i \in \mathbb{N}_0^{G}$. A cell is retained iff it satisfies the constraint set
+
+$$n_{\min} \;\le\; \big|\{ g : x_{ig} > 0 \}\big| \;\le\; n_{\max}, \qquad \mathrm{pct}_{\mathrm{mt}}(i) = \frac{\sum_{g \in \mathcal{MT}} x_{ig}}{\sum_{g=1}^{G} x_{ig}} \times 100 \;\le\; \tau_{\mathrm{mt}},$$
+
+removing both empty droplets (low gene count) and stressed/lysing cells (high mitochondrial fraction $\mathcal{MT}$).
+
+### 2. Library-Size Normalization
+
+$$\tilde{x}_{ig} = \log\!\left(1 + 10^{4} \cdot \frac{x_{ig}}{\sum_{g'=1}^{G} x_{ig'}}\right),$$
+
+which renders cells comparable under the Poisson/multinomial sampling model of UMI counts and stabilizes the mean–variance relationship.
+
+### 3. Differential Expression: MAST Hurdle Model
+
+Survivor vs. non-survivor differential expression is tested gene-by-gene with a two-part **hurdle model**. With $z_{ig} = \mathbb{1}[\tilde{x}_{ig} > 0]$ the detection indicator,
+
+$$\operatorname{logit} P(z_{ig} = 1) = \mathbf{c}_i^{\top}\boldsymbol{\beta}_g^{\mathrm{disc}}, \qquad \tilde{x}_{ig} \mid (z_{ig} = 1) \sim \mathcal{N}\!\left(\mathbf{c}_i^{\top}\boldsymbol{\beta}_g^{\mathrm{cont}},\ \sigma_g^2\right),$$
+
+where $\mathbf{c}_i$ encodes outcome group and cellular detection rate (a proxy for technical depth). The discrete component captures changes in *detection frequency*, the continuous component changes in *expression magnitude*; a combined $\chi^2$ test on $(\boldsymbol{\beta}^{\mathrm{disc}}, \boldsymbol{\beta}^{\mathrm{cont}})$ followed by Benjamini–Hochberg correction yields FDR-controlled calls at $q = 0.05$.
+
+### 4. Compositional Shift Analysis
+
+Temporal remodeling of the immune compartment within 6 h of diagnosis is tested on cell-type proportions. For cell type $k$ at time $t$, with counts $n_k^{(t)}$ over total $N^{(t)}$, proportion differences are assessed by a two-proportion $z$-test,
+
+$$z = \frac{\hat{p}_k^{(t_1)} - \hat{p}_k^{(t_2)}}{\sqrt{\hat{p}(1-\hat{p})\left(1/N^{(t_1)} + 1/N^{(t_2)}\right)}}, \qquad \hat{p}_k^{(t)} = \frac{n_k^{(t)}}{N^{(t)}},$$
+
+which revealed the early expansion of platelet and erythroid precursors in non-survivors.
+
+### 5. Trajectory Ordering
+
+Cells are ordered along a learned principal graph on the low-dimensional embedding; pseudotime is the geodesic distance from the root state,
+
+$$\tau(i) = d_{\mathcal{G}}\!\left(\operatorname{proj}_{\mathcal{G}}(\mathbf{u}_i),\ \text{root}\right),$$
+
+recovering the monocyte and lymphocyte transcriptional trajectories that diverge between outcome groups.
+
+### 6. Gene Set Enrichment
+
+For pathway set $\mathcal{S}$ ranked by the differential statistic, enrichment is scored by a Kolmogorov–Smirnov-like running sum over the ranked list $L$:
+
+$$\mathrm{ES}(\mathcal{S}) = \max_{1 \le j \le G} \left| \sum_{\substack{g \in \mathcal{S} \\ \mathrm{rank}(g) \le j}} \frac{|r_{(g)}|^{\alpha}}{N_R} - \sum_{\substack{g \notin \mathcal{S} \\ \mathrm{rank}(g) \le j}} \frac{1}{N - N_R} \right|, \qquad N_R = \sum_{g \in \mathcal{S}} |r_{(g)}|^{\alpha},$$
+
+with significance from phenotype-label permutation (hypergeometric test for over-representation via `clusterProfiler`).
+
+---
 
 ## Data Availability
 
@@ -40,7 +90,7 @@ BiocManager::install(c("SingleR", "MAST", "clusterProfiler"))
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/sepsis-scrna-dynamics.git
+git clone https://github.com/xqiu625/sepsis-scrna-dynamics.git
 cd sepsis-scrna-dynamics
 
 # Set up R environment
